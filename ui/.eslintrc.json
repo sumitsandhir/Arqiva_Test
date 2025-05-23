@@ -1,0 +1,28 @@
+{
+  "parser": "@typescript-eslint/parser", // Specifies the ESLint parser for TypeScript
+  "parserOptions": {
+    "ecmaVersion": 2020, // Allows modern ECMAScript features
+    "sourceType": "module", // Enables import/export syntax
+    "ecmaFeatures": {
+      "jsx": true // Enables JSX parsing
+    }
+  },
+  "settings": {
+    "react": {
+      "version": "detect" // Automatically detect the React version
+    }
+  },
+  "plugins": ["@typescript-eslint", "react"], // Includes TypeScript and React plugins
+  "extends": [
+    "eslint:recommended", // Base ESLint recommended rules
+    "plugin:react/recommended", // React-specific rules
+    "plugin:@typescript-eslint/recommended", // TypeScript-specific rules
+    "plugin:react-hooks/recommended", // Enforces React Hooks rules
+    "prettier" // Integrates Prettier rules (optional, if using Prettier)
+  ],
+  "rules": {
+    "react/react-in-jsx-scope": "off", // React 17+ JSX transform doesn't need React in scope
+    "@typescript-eslint/no-unused-vars": "warn", // Warns on unused variables
+    "react/prop-types": "off" // Disables prop-types rule if using TypeScript for type checking
+  }
+}

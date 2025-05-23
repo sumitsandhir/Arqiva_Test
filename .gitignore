@@ -1,0 +1,44 @@
+# Node.js dependencies
+node_modules/
+npm-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Build output
+dist/
+build/
+
+# Temporary files
+.temp/
+.cache/
+.vscode/
+.DS_Store
+Thumbs.db
+*.log
+
+# Env files
+.env
+.env.*.local
+
+# Testing-related output
+coverage/
+jest.*
+.vitest/
+
+# Editor- or IDE-specific files
+.idea/
+*.iml
+*.swp
+
+# TypeScript specific
+*.tsbuildinfo
+
+# Generated files
+types/
+venv/
+
+# Miscellaneous
+*.tgz
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
