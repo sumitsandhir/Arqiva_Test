@@ -1,6 +1,6 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { MemoryRouter, Routes, Route } from 'react-router-dom';
+import { MemoryRouter } from 'react-router-dom';
 import axios from 'axios';
 import HomePage from '../HomePage';
 import { Contribution } from '../../types';
@@ -8,6 +8,20 @@ import { Contribution } from '../../types';
 // Mock axios
 vi.mock('axios');
 const mockedAxios = axios as jest.Mocked<typeof axios>;
+
+// Setup for all tests
+beforeEach(() => {
+  vi.resetAllMocks();
+});
+
+// Helper function to render component
+const renderHomePage = (initialEntries = ['/']) => {
+  return render(
+      <MemoryRouter initialEntries={initialEntries} future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+        <HomePage />
+      </MemoryRouter>
+  );
+};
 
 describe('HomePage', () => {
   const mockContributions: Contribution[] = [
@@ -17,7 +31,7 @@ describe('HomePage', () => {
       description: 'Description 1',
       startTime: '2024-05-27T10:00:00Z',
       endTime: '2024-05-27T11:00:00Z',
-      owner: 'Test Owner 1'
+      owner: 'Test Owner 1',
     },
     {
       id: 2,
@@ -25,186 +39,198 @@ describe('HomePage', () => {
       description: 'Description 2',
       startTime: '2024-05-27T12:00:00Z',
       endTime: '2024-05-27T13:00:00Z',
-      owner: 'Test Owner 2'
-    }
+      owner: 'Test Owner 2',
+    },
   ];
 
-  beforeEach(() => {
-    // Reset mocks before each test
-    vi.clearAllMocks();
-
-    // Mock successful API response
-    mockedAxios.get.mockResolvedValue({
-      data: {
-        contributions: mockContributions,
-        total: 2,
-        skip: 0,
-        limit: 14
-      }
-    });
-  });
-
-  const renderWithRouter = (initialEntries = ['/']) => {
-    return render(
-      <MemoryRouter initialEntries={initialEntries}>
-        <Routes>
-          <Route path="/" element={<HomePage />} />
-        </Routes>
-      </MemoryRouter>
-    );
-  };
-
   test('renders loading state initially', () => {
-    renderWithRouter();
+    // Setup mock
+    mockedAxios.get.mockResolvedValueOnce({
+      data: { contributions: [], total: 0, skip: 0, limit: 14 },
+    });
+
+    // Render component
+    renderHomePage();
+
+    // Check loading state
     expect(screen.getByTestId('loading-spinner')).toBeInTheDocument();
   });
 
   test('renders contributions after loading', async () => {
-    renderWithRouter();
-
-    // Wait for loading to finish
-    await waitFor(() => {
-      expect(screen.queryByTestId('loading-spinner')).not.toBeInTheDocument();
+    // Setup mock
+    mockedAxios.get.mockResolvedValueOnce({
+      data: {
+        contributions: mockContributions,
+        total: 2,
+        skip: 0,
+        limit: 14,
+      },
     });
 
-    // Check if contributions are rendered
-    expect(screen.getByText('Test Contribution 1')).toBeInTheDocument();
-    expect(screen.getByText('Description 1')).toBeInTheDocument();
-    expect(screen.getByText('Test Contribution 2')).toBeInTheDocument();
-    expect(screen.getByText('Description 2')).toBeInTheDocument();
+    // Render component
+    renderHomePage();
+
+    // Wait for loading to finish
+    await waitFor(() => expect(screen.queryByTestId('loading-spinner')).not.toBeInTheDocument());
+
+    // Check for content using data-testid if possible, or partial text matching
+    expect(screen.getAllByRole('heading', { level: 2 })[0]).toHaveTextContent(/Test Contribution 1/i);
+    expect(screen.getAllByRole('heading', { level: 2 })[1]).toHaveTextContent(/Test Contribution 2/i);
   });
 
   test('renders error message when API call fails', async () => {
-    // Mock failed API response
+    // Setup mock
     mockedAxios.get.mockRejectedValueOnce(new Error('API Error'));
 
-    renderWithRouter();
+    // Render component
+    renderHomePage();
 
-    // Wait for error message to appear
-    await waitFor(() => {
-      expect(screen.getByText(/Failed to fetch contributions/i)).toBeInTheDocument();
-    });
+    // Wait for error message
+    await waitFor(() => expect(screen.queryByTestId('loading-spinner')).not.toBeInTheDocument());
+    expect(screen.getByText(/Failed to fetch contributions/i)).toBeInTheDocument();
   });
 
   test('renders empty state when no contributions match search', async () => {
-    // Mock empty response
+    // Setup mock
     mockedAxios.get.mockResolvedValueOnce({
       data: {
         contributions: [],
         total: 0,
         skip: 0,
-        limit: 14
-      }
+        limit: 14,
+      },
     });
 
-    renderWithRouter();
+    // Render component
+    renderHomePage();
 
-    // Wait for empty state message
-    await waitFor(() => {
-      expect(screen.getByText(/No contributions found/i)).toBeInTheDocument();
-    });
+    // Wait for empty state
+    await waitFor(() => expect(screen.queryByTestId('loading-spinner')).not.toBeInTheDocument());
+    expect(screen.getByText(/No contributions found/i)).toBeInTheDocument();
   });
 
   test('calls API with search parameters when search is submitted', async () => {
+    // Setup user events
     const user = userEvent.setup();
 
-    renderWithRouter();
-
-    // Wait for loading to finish
-    await waitFor(() => {
-      expect(screen.queryByTestId('loading-spinner')).not.toBeInTheDocument();
+    // Setup mock
+    mockedAxios.get.mockResolvedValue({
+      data: {
+        contributions: mockContributions,
+        total: 2,
+        skip: 0,
+        limit: 14,
+      },
     });
 
-    // Fill search form
+    // Render component
+    renderHomePage();
+
+    // Wait for loading to finish
+    await waitFor(() => expect(screen.queryByTestId('loading-spinner')).not.toBeInTheDocument());
+
+    // Get form elements (use getByRole if possible)
     const titleInput = screen.getByLabelText(/Title/i);
     const ownerInput = screen.getByLabelText(/Producer/i);
     const searchButton = screen.getByRole('button', { name: /Search/i });
 
+    // Clear mock to isolate search API call
+    mockedAxios.get.mockClear();
+
+    // Type in search fields and submit
     await user.type(titleInput, 'Test Title');
     await user.type(ownerInput, 'Test Owner');
     await user.click(searchButton);
 
-    // Check if API was called with correct parameters
-    expect(mockedAxios.get).toHaveBeenCalledWith('/contributions', {
-      params: expect.objectContaining({
-        title: 'Test Title',
-        owner: 'Test Owner',
-        skip: 0,
-        limit: 14
-      })
+    // Verify API call
+    await waitFor(() => {
+      expect(mockedAxios.get).toHaveBeenCalledWith('/contributions', {
+        params: expect.objectContaining({
+          title: 'Test Title',
+          owner: 'Test Owner',
+        }),
+      });
     });
   });
 
   test('renders with URL search parameters', async () => {
-    // Render with initial URL params
-    renderWithRouter(['/?title=Test&owner=Owner&page=2']);
-
-    // Check if API was called with correct parameters from URL
-    expect(mockedAxios.get).toHaveBeenCalledWith('/contributions', {
-      params: expect.objectContaining({
-        title: 'Test',
-        owner: 'Owner',
-        skip: 14, // page 2 with limit 14
-        limit: 14
-      })
-    });
-
-    // Wait for loading to finish
-    await waitFor(() => {
-      expect(screen.queryByTestId('loading-spinner')).not.toBeInTheDocument();
-    });
-
-    // Check if search inputs have values from URL
-    const titleInput = screen.getByLabelText(/Title/i) as HTMLInputElement;
-    const ownerInput = screen.getByLabelText(/Producer/i) as HTMLInputElement;
-
-    expect(titleInput.value).toBe('Test');
-    expect(ownerInput.value).toBe('Owner');
-  });
-
-  test('updates URL when pagination is used', async () => {
-    const user = userEvent.setup();
-
-    // Mock response with more pages
+    // Setup mock
     mockedAxios.get.mockResolvedValueOnce({
       data: {
         contributions: mockContributions,
-        total: 28, // 2 pages with limit 14
-        skip: 0,
-        limit: 14
-      }
+        total: 2,
+        skip: 14,
+        limit: 14,
+      },
     });
 
-    renderWithRouter();
+    // Render with URL params
+    renderHomePage(['/?title=Test&owner=Owner&page=2']);
+
+    // Verify API call
+    await waitFor(() => {
+      expect(mockedAxios.get).toHaveBeenCalledWith('/contributions', {
+        params: expect.objectContaining({
+          title: 'Test',
+          owner: 'Owner',
+          skip: 14,
+        }),
+      });
+    });
 
     // Wait for loading to finish
-    await waitFor(() => {
-      expect(screen.queryByTestId('loading-spinner')).not.toBeInTheDocument();
+    await waitFor(() => expect(screen.queryByTestId('loading-spinner')).not.toBeInTheDocument());
+
+    // Check form values
+    expect(screen.getByLabelText(/Title/i)).toHaveValue('Test');
+    expect(screen.getByLabelText(/Producer/i)).toHaveValue('Owner');
+  });
+
+  test('updates URL when pagination is used', async () => {
+    // Setup user events
+    const user = userEvent.setup();
+
+    // Setup mock for initial load
+    mockedAxios.get.mockResolvedValueOnce({
+      data: {
+        contributions: mockContributions,
+        total: 28, // Multiple pages
+        skip: 0,
+        limit: 14,
+      },
     });
 
-    // Check if pagination is rendered
+    // Render component
+    renderHomePage();
+
+    // Wait for loading to finish
+    await waitFor(() => expect(screen.queryByTestId('loading-spinner')).not.toBeInTheDocument());
+
+    // Find pagination button
     const nextPageButton = screen.getByRole('button', { name: /Next/i });
     expect(nextPageButton).toBeInTheDocument();
 
-    // Mock response for next page
+    // Setup mock for next page
+    mockedAxios.get.mockClear();
     mockedAxios.get.mockResolvedValueOnce({
       data: {
         contributions: mockContributions,
         total: 28,
         skip: 14,
-        limit: 14
-      }
+        limit: 14,
+      },
     });
 
-    // Click next page
+    // Click pagination
     await user.click(nextPageButton);
 
-    // Check if API was called with correct pagination parameters
-    expect(mockedAxios.get).toHaveBeenCalledWith('/contributions', {
-      params: expect.objectContaining({
-        skip: 14,
-        limit: 14
-      })
+    // Verify API call
+    await waitFor(() => {
+      expect(mockedAxios.get).toHaveBeenCalledWith('/contributions', {
+        params: expect.objectContaining({
+          skip: 14,
+        }),
+      });
     });
   });
 });

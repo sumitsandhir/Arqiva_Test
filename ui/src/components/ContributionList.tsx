@@ -46,7 +46,7 @@ const ContributionsList: React.FC = () => {
 
             // Update state with response data
             setContributions(response.data.contributions); // Update contributions
-            setTotalItems(response.data.totalItems || response.data.total); // Use totalItems or fall back to total
+            setTotalItems(response.data.totalItems); // Update total items if API provides this
         } catch (error) {
             console.error('Error fetching contributions:', error);
         }
