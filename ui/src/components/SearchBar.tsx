@@ -1,10 +1,20 @@
+/**
+ * SearchBar Component
+ * 
+ * Provides a form for searching contributions by title and producer/owner.
+ * Includes input fields for title and owner, and buttons for submitting and clearing the search.
+ * Maintains its own state but calls the parent's onSearch callback when search is submitted or cleared.
+ */
 import React, { useState } from 'react';
 import { SearchParams } from '../types';
 
+/**
+ * Props for the SearchBar component
+ */
 interface SearchBarProps {
-  initialTitle?: string;
-  initialOwner?: string;
-  onSearch: (params: SearchParams) => void;
+  initialTitle?: string;  // Initial value for title input
+  initialOwner?: string;  // Initial value for owner input
+  onSearch: (params: SearchParams) => void;  // Callback when search is submitted
 }
 
 const SearchBar: React.FC<SearchBarProps> = ({ 
@@ -12,14 +22,24 @@ const SearchBar: React.FC<SearchBarProps> = ({
   initialOwner = '', 
   onSearch 
 }) => {
+  // State for input fields
   const [title, setTitle] = useState<string>(initialTitle);
   const [owner, setOwner] = useState<string>(initialOwner);
 
+  /**
+   * Handles form submission
+   * Prevents default form submission behavior and calls onSearch with current values
+   * @param e - Form submission event
+   */
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>): void => {
     e.preventDefault();
     onSearch({ title, owner });
   };
 
+  /**
+   * Handles clearing the search form
+   * Resets input fields to empty strings and calls onSearch with empty values
+   */
   const handleClear = (): void => {
     setTitle('');
     setOwner('');

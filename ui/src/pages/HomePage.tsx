@@ -1,3 +1,10 @@
+/**
+ * HomePage Component
+ * 
+ * Main page of the application that displays a list of contributions.
+ * Includes search functionality, pagination, and handles loading/error states.
+ * Uses URL search parameters for persistent state across page refreshes.
+ */
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import axios from 'axios';
@@ -7,40 +14,59 @@ import Pagination from '../components/Pagination';
 import { Contribution, ContributionsResponse, SearchParams } from '../types';
 
 const HomePage: React.FC = () => {
+  // State for URL search parameters
   const [searchParams, setSearchParams] = useSearchParams();
+
+  // State for contributions data and UI states
   const [contributions, setContributions] = useState<Contribution[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [totalContributions, setTotalContributions] = useState<number>(0);
 
-  // Get search params or use defaults
+  /**
+   * Extract search parameters from URL or use defaults
+   * These values are used for API requests and UI state
+   */
   const currentPage = parseInt(searchParams.get('page') || '1', 10);
   const searchTitle = searchParams.get('title') || '';
   const searchOwner = searchParams.get('owner') || '';
   const limit = 14; // Show 14 contributions per page
 
+  /**
+   * Effect hook to fetch contributions from the API
+   * Runs when search parameters or pagination changes
+   */
   useEffect(() => {
+    /**
+     * Fetches contributions from the API based on current search and pagination parameters
+     * Handles loading state, error handling, and data updates
+     */
     const fetchContributions = async (): Promise<void> => {
       try {
         setLoading(true);
 
-        // Calculate skip for pagination
+        // Calculate skip for pagination (offset-based pagination)
         const skip = (currentPage - 1) * limit;
 
-        // Build query parameters
+        // Build query parameters for API request
         const params: Record<string, string | number> = { skip, limit };
         if (searchTitle) params.title = searchTitle;
         if (searchOwner) params.owner = searchOwner;
 
+        // Make API request
         const response = await axios.get<ContributionsResponse>('/contributions', { params });
+
+        // Update state with response data
         setContributions(response.data.contributions);
         setTotalContributions(response.data.total);
         setError(null);
       } catch (err) {
+        // Handle errors
         console.error('Error fetching contributions:', err);
         setError('Failed to fetch contributions. Please try again later.');
         setContributions([]);
       } finally {
+        // Always turn off loading state
         setLoading(false);
       }
     };
@@ -48,7 +74,11 @@ const HomePage: React.FC = () => {
     fetchContributions();
   }, [currentPage, searchTitle, searchOwner, limit]);
 
-  // Handle search submission
+  /**
+   * Handles search form submission
+   * Updates URL search parameters and resets to page 1
+   * @param searchData - Object containing search parameters
+   */
   const handleSearch = (searchData: SearchParams): void => {
     const newParams: Record<string, string> = { page: '1' };
     if (searchData.title) newParams.title = searchData.title;
@@ -56,7 +86,11 @@ const HomePage: React.FC = () => {
     setSearchParams(newParams);
   };
 
-  // Handle page change
+  /**
+   * Handles page change from pagination component
+   * Updates the page parameter in the URL
+   * @param newPage - New page number
+   */
   const handlePageChange = (newPage: number): void => {
     setSearchParams({
       ...Object.fromEntries(searchParams),
@@ -64,7 +98,10 @@ const HomePage: React.FC = () => {
     });
   };
 
-  // Calculate total pages
+  /**
+   * Calculate total pages for pagination
+   * Based on total contributions and items per page
+   */
   const totalPages = Math.ceil(totalContributions / limit);
 
   return (

@@ -1,13 +1,30 @@
+/**
+ * DarkModeToggle Component
+ * 
+ * Provides a button to toggle between light and dark mode.
+ * Automatically detects system preference for dark mode on initial load.
+ * Persists user preference in localStorage.
+ * Applies dark mode by adding/removing the 'dark' class on the document element.
+ */
 import React, { useEffect, useState } from 'react';
 
 const DarkModeToggle: React.FC = () => {
-  // Check if user has a preference stored in localStorage
+  /**
+   * Initialize dark mode state based on:
+   * 1. User's previously saved preference in localStorage
+   * 2. System preference (prefers-color-scheme media query) if no saved preference
+   */
   const [darkMode, setDarkMode] = useState<boolean>(() => {
     const savedMode = localStorage.getItem('darkMode');
     return savedMode === 'true' || (savedMode === null && window.matchMedia('(prefers-color-scheme: dark)').matches);
   });
 
-  // Apply dark mode class to html element
+  /**
+   * Effect to apply dark mode changes to the document
+   * Runs whenever the darkMode state changes
+   * 1. Adds/removes 'dark' class on document element
+   * 2. Saves current preference to localStorage
+   */
   useEffect(() => {
     if (darkMode) {
       document.documentElement.classList.add('dark');
@@ -17,7 +34,9 @@ const DarkModeToggle: React.FC = () => {
     localStorage.setItem('darkMode', darkMode.toString());
   }, [darkMode]);
 
-  // Toggle dark mode
+  /**
+   * Toggles between dark and light mode
+   */
   const toggleDarkMode = (): void => {
     setDarkMode(!darkMode);
   };

@@ -1,6 +1,16 @@
+/**
+ * ContributionCard Component
+ * 
+ * Displays a single contribution with its details in a card format.
+ * Shows title, description, start/end times, owner, and dynamically calculated status.
+ * Status is determined based on the current time relative to the contribution's start and end times.
+ */
 import React from 'react';
 import { Contribution, ContributionStatus } from '../types';
 
+/**
+ * Props for the ContributionCard component
+ */
 interface ContributionCardProps {
   contribution: Contribution;
 }
@@ -8,13 +18,23 @@ interface ContributionCardProps {
 const ContributionCard: React.FC<ContributionCardProps> = ({ contribution }) => {
   const {title, description, startTime, endTime, owner } = contribution;
 
-  // Format dates to user's locale
+  /**
+   * Formats an ISO date string to the user's locale
+   * @param dateString - ISO 8601 formatted date string
+   * @returns Formatted date string in the user's locale
+   */
   const formatDate = (dateString: string): string => {
     const date = new Date(dateString);
     return date.toLocaleString();
   };
 
-  // Determine contribution status
+  /**
+   * Determines the contribution status based on current time
+   * - Complete: End time is in the past
+   * - Active: Current time is between start and end times
+   * - Scheduled: Start time is in the future
+   * @returns ContributionStatus object with label and color
+   */
   const getStatus = (): ContributionStatus => {
     const now = new Date();
     const start = new Date(startTime);
